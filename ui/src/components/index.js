@@ -6,18 +6,29 @@ import Message  from './chats';
 import ChatHeader from "./chatHeader";
 import {bindActionCreators} from "redux";
 import {connect} from 'react-redux';
+import io from 'socket.io-client';
 
 
+const socketUrl = 'http://127.0.0.1:4000';
 const theme = createMuiTheme();
 
 class App extends Component {
 
     state = {
         users: [],
-        messages: []
+        messages: [],
+        currentChat: {
+            recipient: "",
+            messages: []
+        },
     };
 
-    componentDidMount(){
+    componentWillMount(){
+
+        const socket = io(socketUrl);
+        socket.on('connect', ()=>{
+            console.log("Socket has connected");
+        })
 
     }
 
@@ -81,7 +92,9 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = () => {
+    return {
 
+    }
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);
