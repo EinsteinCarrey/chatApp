@@ -1,38 +1,14 @@
-import React, {Component} from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
-import {MuiThemeProvider, createMuiTheme} from "material-ui";
-import './index.css';
+import App from './components/homepage';
 import registerServiceWorker from './registerServiceWorker';
-import User  from './user';
+import {Provider} from "react-redux";
+import store from "./store";
 
+const connectedComponents =
+    <Provider store={store}>
+        <App />
+    </Provider>;
 
-const theme = createMuiTheme();
-
-const users = ['', '', ''];
-
-
-
-class App extends Component {
-    render() {
-        return (
-            <MuiThemeProvider theme={theme}>
-                <div className="container" {...this.props}>
-                    <div className="chats-sidebar">
-                        <ul>
-                            {users.map(() =>(
-                            <User
-                                userName="Shrimp and Chorizo Paella"
-                                lastActive="September 14, 2016"
-                            />
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </MuiThemeProvider>
-        );
-    }
-}
-
-
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(connectedComponents, document.getElementById('root'));
 registerServiceWorker();
