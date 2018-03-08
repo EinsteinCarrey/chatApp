@@ -13,10 +13,15 @@ const styles = {
 class User extends Component {
     render() {
 
-        const {userName, lastActive} = this.props;
+        const {id, contact, changeRecipient} = this.props;
+
+        const userName = contact[0],
+            lastActive = contact[1];
 
         return (
-            <div className="user-details">
+            <div className="user-details"
+                 onClick={(e) => changeRecipient(id, e)}
+            >
                 <CardHeader
                     avatar={
                         <Avatar aria-label={userName}>

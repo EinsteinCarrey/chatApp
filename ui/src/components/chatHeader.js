@@ -17,12 +17,13 @@ class ChatHeader extends Component {
 
     render() {
 
-        const {userName, lastActive, classes} = this.props;
+        const {contact, classes} = this.props;
+        const userName = contact[0],
+            lastActive = contact[1];
 
         return (
             <div className="conversations-header">
                 <CardHeader
-                    className={classes.cardHeader}
                     avatar={
                         <Avatar
                             className={classes.avatar}

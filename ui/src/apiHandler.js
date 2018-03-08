@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /* base url of the api */
-const baseUrl = 'http://localhost:3050/';
+const baseUrl = 'http://localhost:4000';
 
 /* Authorization headers */
 const config = {

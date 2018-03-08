@@ -2,11 +2,12 @@ import React, {Component} from 'react';
 import {MuiThemeProvider, createMuiTheme, TextField, Button} from "material-ui";
 import '../assets/index.css';
 import User  from './user';
-import Message  from './chats';
+import Chat  from './chats';
 import ChatHeader from "./chatHeader";
 import {bindActionCreators} from "redux";
 import {connect} from 'react-redux';
 import io from 'socket.io-client';
+import {fetchMessages, fetchContacts, createMessage} from '../actions/';
 
 
 const socketUrl = 'http://127.0.0.1:4000';
@@ -15,39 +16,63 @@ const theme = createMuiTheme();
 class App extends Component {
 
     state = {
-        users: [],
-        messages: [],
-        currentChat: {
-            recipient: "",
-            messages: []
-        },
+        contacts: {},
+        messages: {},
+        currentChat: ""
     };
 
     componentWillMount(){
 
-        const socket = io(socketUrl);
-        socket.on('connect', ()=>{
-            console.log("Socket has connected");
-        })
+        const {fetchMessages, fetchContacts} = this.props;
+
+        fetchContacts();
+        fetchMessages();
+
+        // const socket = io(socketUrl);
+        // socket.on('interval_received', (interval)=>{
+        //     console.log("interval_received", interval);
+        // });
+        //
+        // socket.emit('subscribeToTimer', 1000);
 
     }
 
+    componentWillReceiveProps(nextProps) {
+
+        /* Update the messages state */
+        if( this.state.contacts !== nextProps.contacts)
+            this.setState({
+                contacts: nextProps.contacts,
+                currentChat: Object.keys(nextProps.contacts)[0]
+            });
+
+        /* Update the messages state */
+        if( this.state.messages !== nextProps.messages)
+            this.setState({messages: nextProps.messages});
+
+    }
+
+    changeRecipient = (recipient, e)=>{
+        this.setState({ currentChat: recipient });
+    };
+
     render() {
 
-        const {users, messages} = this.state;
+        const {contacts, messages, currentChat} = this.state;
+        const {changeRecipient} = this;
 
         return (
             <MuiThemeProvider theme={theme}>
                 <div className="container" {...this.props}>
                     <div className="conversations">
 
-                        <ChatHeader
-                            userName="Shrimp and Chorizo Paella"
-                            lastActive="September 14, 2016"
-                        />
+                        {
+                            contacts[currentChat] &&
+                            <ChatHeader contact={contacts[currentChat]} />
+                        }
 
-                        {messages.map((text, index) =>(
-                            <Message text={text} ownMessage={index%2}/>
+                        {messages[currentChat] && messages[currentChat].map((message, index) =>(
+                            <Chat key={index} message={message} ownMessage={index%2}/>
                             )
                         )}
 
@@ -70,12 +95,14 @@ class App extends Component {
                     </div>
                     <div className="chats-sidebar">
                         <ul>
-                            {users.map((user) =>(
-                            <User
-                                userName="Shrimp and Chorizo Paella"
-                                lastActive="September 14, 2016"
-                            />
-                            ))}
+                            {Object.keys(contacts).map((id) =>(
+                                <User
+                                    changeRecipient ={changeRecipient}
+                                    key={id} id={id}
+                                    contact={contacts[id]}
+                                />
+                            ))
+                            }
                         </ul>
                     </div>
                 </div>
@@ -86,15 +113,13 @@ class App extends Component {
 
 const mapStateToProps = (state) => {
     return{
-        users: state.users,
+        contacts: state.contacts,
         messages: state.messages
     }
 };
 
-const mapDispatchToProps = () => {
-    return {
-
-    }
+const mapDispatchToProps = (dispatch) => {
+   return bindActionCreators({fetchMessages, fetchContacts, createMessage}, dispatch);
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);
