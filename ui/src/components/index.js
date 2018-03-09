@@ -7,7 +7,10 @@ import ChatHeader from "./chatHeader";
 import {bindActionCreators} from "redux";
 import {connect} from 'react-redux';
 import io from 'socket.io-client';
-import {fetchMessages, fetchContacts, createMessage} from '../actions/';
+import {fetchMessages, fetchContacts, createMessage, authenticateUser} from '../actions/';
+import AuthenticationModal from './authenticationModal';
+import toastr from 'toastr';
+import '../../node_modules/toastr/build/toastr.min.css';
 
 
 const socketUrl = 'http://127.0.0.1:4000';
@@ -18,7 +21,14 @@ class App extends Component {
     state = {
         contacts: {},
         messages: {},
-        currentChat: ""
+        currentChat: "",
+        newMessage: "",
+        userData: {
+            signupAction: "login",
+            passwd: "",
+            username: ""
+        },
+        showLoginModal: true
     };
 
     componentWillMount(){
@@ -56,56 +66,127 @@ class App extends Component {
         this.setState({ currentChat: recipient });
     };
 
+    updateNewMessage = (e) =>{
+        this.setState({ newMessage: e.target.value });
+    };
+
+    authenticateUser = () =>{
+        const {passwd, username, signupAction} = this.state.userData;
+        const data = {
+            passwd,
+            username
+        };
+        let endPoint = "";
+        signupAction === "login" ? endPoint = "/users/authenticate" : endPoint="/users";
+        this.props.authenticateUser(endPoint, data);
+    };
+
+    hideAuthModal = ()=>{
+        if(localStorage.getItem('token')) {
+            this.setState({showLoginModal: false})
+        }else{
+            toastr.remove();
+            toastr.error("Please login to continue");
+        }
+    };
+
+    updateInputState = (source, e) => {
+        let newDataState = this.state.userData;
+        newDataState[source] = e.target.value;
+        this.setState({userData: newDataState});
+    };
+
+
+    sendMessage = () =>{
+        this.props.createMessage(
+            { message: this.state.newMessage },
+            this.state.currentChat
+        );
+    };
+
     render() {
 
-        const {contacts, messages, currentChat} = this.state;
-        const {changeRecipient} = this;
+        const {
+            contacts,
+            messages,
+            currentChat,
+            userData,
+            showLoginModal
+        } = this.state;
+
+        const {
+            changeRecipient,
+            updateNewMessage,
+            sendMessage,
+            updateInputState,
+            hideAuthModal,
+            authenticateUser
+        } = this;
 
         return (
             <MuiThemeProvider theme={theme}>
-                <div className="container" {...this.props}>
-                    <div className="conversations">
+                {
+                    !localStorage.getItem('token') &&
+                        <AuthenticationModal
+                            authenticateUser={authenticateUser}
+                            hideAuthModal={hideAuthModal}
+                            showLoginModal={showLoginModal}
+                            userData={userData}
+                            updateInputState={updateInputState}/>
+                }
+                {
+                    localStorage.getItem('token') &&
+                    <div className="container" {...this.props}>
+                        <div className="conversations">
 
-                        {
-                            contacts[currentChat] &&
-                            <ChatHeader contact={contacts[currentChat]} />
-                        }
-
-                        {messages[currentChat] && messages[currentChat].map((message, index) =>(
-                            <Chat key={index} message={message} ownMessage={index%2}/>
-                            )
-                        )}
-
-                    </div>
-                    <div className="message-input">
-                        <TextField
-                            id="multiline-flexible"
-                            multiline
-                            rowsMax="4"
-                            fullWidth
-                            placeholder="Message Username"
-                            onChange={()=>{}}
-                            margin="normal"
-                        />
-                    </div>
-                    <div className="send-message">
-                        <Button className="" variant="raised" color="primary">
-                            Send
-                        </Button>
-                    </div>
-                    <div className="chats-sidebar">
-                        <ul>
-                            {Object.keys(contacts).map((id) =>(
-                                <User
-                                    changeRecipient ={changeRecipient}
-                                    key={id} id={id}
-                                    contact={contacts[id]}
-                                />
-                            ))
+                            {
+                                contacts[currentChat] &&
+                                <ChatHeader contact={contacts[currentChat]}/>
                             }
-                        </ul>
+
+                            {messages[currentChat] && messages[currentChat].map((message, index) => (
+                                    <Chat key={index} message={message} ownMessage={index % 2}/>
+                                )
+                            )}
+
+                        </div>
+                        <div className="message-input">
+                            <TextField
+                                id="newMessage"
+                                multiline
+                                rowsMax="4"
+                                fullWidth
+                                placeholder={
+                                    contacts[currentChat] ? "Message " + contacts[currentChat][0] : ""
+                                }
+                                onChange={(e) => {
+                                    updateNewMessage(e)
+                                }}
+                                margin="normal"
+                            />
+                        </div>
+                        <div className="send-message">
+                            <Button
+                                variant="raised"
+                                color="primary"
+                                onClick={sendMessage}>
+                                Send
+                            </Button>
+                        </div>
+                        <div className="chats-sidebar">
+                            <ul>
+                                {Object.keys(contacts).map((id) => (
+                                    <User
+                                        changeRecipient={changeRecipient}
+                                        key={id} id={id}
+                                        contact={contacts[id]}
+                                    />
+                                ))
+                                }
+                            </ul>
+                        </div>
                     </div>
-                </div>
+                }
             </MuiThemeProvider>
         );
     }
@@ -119,7 +200,12 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => {
-   return bindActionCreators({fetchMessages, fetchContacts, createMessage}, dispatch);
+   return bindActionCreators({
+       fetchMessages,
+       fetchContacts,
+       createMessage,
+       authenticateUser
+   }, dispatch);
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

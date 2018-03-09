@@ -1,3 +1,4 @@
+import 'babel-polyfill';
 import Koa from 'koa';
 import Router from 'koa-router';
 import bodyParser from 'koa-body';
@@ -5,11 +6,19 @@ import socketIO from 'socket.io';
 import cors from '@koa/cors';
 import http from 'http';
 import models from './models';
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import messages from "./models/messages";
 
 const app = new Koa(), router = new Router();
 
 const server = http.createServer(app.callback()); // create a http server
 const socket = socketIO(server);
+
+// async function relay() {
+//     return await timeout(5000);
+// }
+
 
 router.get('/', ctx => {
     ctx.body = {
@@ -24,7 +33,6 @@ router.get('/', ctx => {
     };
 });
 
-
 router.get('/contacts', ctx => {
     ctx.body = {
         shgvVG567HGYBHJ: ["Number one", "9:50 am"],
@@ -33,11 +41,53 @@ router.get('/contacts', ctx => {
     };
 });
 
+router.post('/:user/message', ctx => {
+    ctx.body = models.Message.create({
+        recipient: 50,//ctx.params.user,
+        message: ctx.request.body.message
+    }).then((message) => {
+        ctx.body = message.dataValues;
+    });
+});
+
+router.post('/users', async (ctx) => {
+
+    /* hash the password using bcrypt and save user to DB */
+    const addUserToDB = () => {
+        return new Promise((resolve, reject) => {
+            let token = "";
+            bcrypt.hash(ctx.request.body.passwd, 10).then(function (hash) {
+                models.User.create({
+                    username: ctx.request.body.username,
+                    password: hash
+                }).then((newUser) => {
+                    /* Create web token */
+                    token = jwt.sign(
+                        {userId: newUser.dataValues.id},
+                        process.env.SECRET_KEY,
+                        {expiresIn: "1 day"}
+                    );
+
+                    ctx.status = 200;
+                    resolve(token);
+                }).catch(models.Sequelize.Error, () =>{
+
+                });
+            });
+        });
+    };
+
+    ctx.body = await addUserToDB(ctx);
+
+});
+
 app
     .use(cors()) // Allow Cross-Origin Resource Sharing
     .use(bodyParser()) // Allow post requests
     .use(router.allowedMethods())
     .use(router.routes());
+
+
 
 socket.on('connection', (connectedSocket) =>{
     connectedSocket.on('subscribeToTimer', (interval)=>{

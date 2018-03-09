@@ -44,14 +44,14 @@ export const fetchContacts = () =>{
 
 };
 
-export const createMessage = (recipientsID, message) =>{
+export const createMessage = (message, recipientsID) =>{
 
     return function (dispatch) {
 
         /* display loader */
         dispatch({type: actionTypes.START_LOADER});
 
-        fetchFromApi("post", recipientsID+"/message", message).then(() => {
+        fetchFromApi("post", `/${recipientsID}/message`, message).then(() => {
             dispatch({
                 type: actionTypes.CREATE_MESSAGE_SUCCESS,
                 message: message
@@ -62,6 +62,26 @@ export const createMessage = (recipientsID, message) =>{
     }
 
 };
+
+export const authenticateUser = (endpoint, userdata) =>{
+
+    return function (dispatch) {
+
+        /* display loader */
+        dispatch({type: actionTypes.START_LOADER});
+
+        fetchFromApi("post", endpoint, userdata).then((token) => {
+            dispatch({
+                type: actionTypes.CREATE_MESSAGE_SUCCESS,
+                token: token
+            });
+        }).catch((err) => {
+            dispatch(displayErrorMessage(err));
+        });
+    }
+
+};
+
 //
 // export const createContact = (endpoint, userData) =>{
 //     return function (dispatch) {
