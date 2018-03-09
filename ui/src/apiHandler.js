@@ -4,8 +4,10 @@ import axios from 'axios';
 const baseUrl = 'http://localhost:4000';
 
 /* Authorization headers */
-const config = {
-    headers: {'x-access-token': localStorage.getItem('token')}
+const config = () => {
+    return {
+        headers: {'x-access-token': localStorage.getItem('token')}
+    }
 };
 
 /* Query the api */
@@ -17,15 +19,15 @@ const runRequest = (method, endpoint, data) => {
 
     switch (method){
         case 'post':
-            return axios.post(endpoint, data, config);
+            return axios.post(endpoint, data, config());
         case 'put':
-            return axios.put(endpoint, data, config);
+            return axios.put(endpoint, data, config());
         case 'delete':
-            return axios.delete(endpoint, config);
+            return axios.delete(endpoint, config());
 
         /* Treat all requests as GET requests if method is not specified */
         default:
-            return axios.get(endpoint, config);
+            return axios.get(endpoint, config());
     }
 };
 

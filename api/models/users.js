@@ -1,18 +1,18 @@
+import models from "./index";
+
 export default (sequelize, DataTypes) => {
     const User = sequelize.define('user', {
-        username: {
+        id: {
+            type: DataTypes.INTEGER,
+            unique: true,
+            primaryKey: true,
+            autoIncrement: true
+        },username: {
             type: DataTypes.STRING,
             unique: true
         },
         password:DataTypes.STRING
     });
-
-    User.associate = function (models) {
-        User.belongsToMany(models.Message, {
-            through: 'chats',
-            foreignKey: 'senderID'
-        });
-    };
 
     return User;
 };

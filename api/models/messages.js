@@ -1,14 +1,11 @@
+import models from "./index";
+
 export default (sequelize, DataTypes) => {
     const Message = sequelize.define('message', {
         recipient: DataTypes.INTEGER,
-        message:DataTypes.STRING
+        message:DataTypes.STRING,
+        sender: DataTypes.INTEGER
     });
-
-    Message.associate = function (models) {
-        Message.belongsTo(models.User, {
-            foreignKey: "recipient"
-        });
-    };
 
     return Message;
 };

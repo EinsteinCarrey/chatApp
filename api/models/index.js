@@ -6,10 +6,22 @@ const sequelize = new Sequelize('chat_app', 'postgres', '', {
     dialect: 'postgres'
 });
 
+
+const User = sequelize.import('./users'),
+    Message = sequelize.import('./messages');
+
 const models = {
-    User: sequelize.import('./users'),
-    Message: sequelize.import('./messages')
+    User,
+    Message
 };
+
+
+User.hasMany(Message, {foreignKey: 'sender', sourceKey: 'id'});
+User.hasMany(Message, {foreignKey: 'recipient', sourceKey: 'id'});
+
+Message.belongsTo(User, {foreignKey: 'sender', targetKey: 'id'});
+Message.belongsTo(User, {foreignKey: 'recipient', targetKey: 'id'});
+
 
 Object.keys(models).forEach(modelName => {
     if (models[modelName].associate) {

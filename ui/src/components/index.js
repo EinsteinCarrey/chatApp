@@ -21,6 +21,7 @@ class App extends Component {
     state = {
         contacts: {},
         messages: {},
+        user: localStorage.getItem('token'),
         currentChat: "",
         newMessage: "",
         userData: {
@@ -31,12 +32,16 @@ class App extends Component {
         showLoginModal: true
     };
 
+    componentDidMount(){
+        if(this.state.user) {
+            const {fetchMessages, fetchContacts} = this.props;
+            fetchContacts();
+            fetchMessages();
+        }
+    }
+
     componentWillMount(){
 
-        const {fetchMessages, fetchContacts} = this.props;
-
-        fetchContacts();
-        fetchMessages();
 
         // const socket = io(socketUrl);
         // socket.on('interval_received', (interval)=>{
@@ -59,6 +64,15 @@ class App extends Component {
         /* Update the messages state */
         if( this.state.messages !== nextProps.messages)
             this.setState({messages: nextProps.messages});
+
+        /* Update the messages state */
+        if( this.state.user !== nextProps.user) {
+            this.setState({user: nextProps.user});
+
+            const {fetchMessages, fetchContacts} = this.props;
+            fetchContacts();
+            fetchMessages();
+        }
 
     }
 
@@ -111,6 +125,7 @@ class App extends Component {
             messages,
             currentChat,
             userData,
+            user,
             showLoginModal
         } = this.state;
 
@@ -126,7 +141,7 @@ class App extends Component {
         return (
             <MuiThemeProvider theme={theme}>
                 {
-                    !localStorage.getItem('token') &&
+                    !user &&
                         <AuthenticationModal
                             authenticateUser={authenticateUser}
                             hideAuthModal={hideAuthModal}
@@ -135,7 +150,7 @@ class App extends Component {
                             updateInputState={updateInputState}/>
                 }
                 {
-                    localStorage.getItem('token') &&
+                    user &&
                     <div className="container" {...this.props}>
                         <div className="conversations">
 
@@ -195,7 +210,8 @@ class App extends Component {
 const mapStateToProps = (state) => {
     return{
         contacts: state.contacts,
-        messages: state.messages
+        messages: state.messages,
+        user: state.user
     }
 };
 

@@ -1,8 +1,9 @@
 import * as actionTypes from './actionTypes';
 import fetchFromApi from "../apiHandler";
+import toastr from 'toastr';
 
 const displayErrorMessage = (err) =>{
-    console.log(err);
+    toastr.error(err);
     return {type: actionTypes.DISPLAY_ERROR_MSG}
 };
 
@@ -71,8 +72,9 @@ export const authenticateUser = (endpoint, userdata) =>{
         dispatch({type: actionTypes.START_LOADER});
 
         fetchFromApi("post", endpoint, userdata).then((token) => {
+            localStorage.setItem('token', token);
             dispatch({
-                type: actionTypes.CREATE_MESSAGE_SUCCESS,
+                type: actionTypes.CREATE_USER_SUCCESS,
                 token: token
             });
         }).catch((err) => {

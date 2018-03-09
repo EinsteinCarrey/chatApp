@@ -8,37 +8,95 @@ import http from 'http';
 import models from './models';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import messages from "./models/messages";
 
 const app = new Koa(), router = new Router();
 
 const server = http.createServer(app.callback()); // create a http server
 const socket = socketIO(server);
 
-// async function relay() {
-//     return await timeout(5000);
-// }
+const getUserId = (token) =>{
+    let output = null;
+    // verifies secret and checks exp
+    jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            output = {errMsg: "Authenticate token is invalid"};
+        } else {
+            // token is valid
+            output = decoded.userId;
+        }
+    });
+    return output;
 
+};
 
-router.get('/', ctx => {
-    ctx.body = {
-        shgvVG567HGYBHJ: [["messsage", "9:30 am", true], ["messsage2", "9:40 am"]],
-        shgvVG56asdv7HGYBHJ: [["messsage4", "9:32 am"], ["messsage5", "9:44 am"], ["messsage10", "9:54 am", true]],
-        shgvVG56asacsvdv7HGYBHJ: [
-            ["messsage34", "9:12 am", true],
-            ["VEry very long message", "9:35 am"],
-            ["messsage sdcs csdcd csdc dcs ccs csdcs cds", "9:48 am"],
-            ["sd sdc sdcs dcs cdavty ht gh jkytj thgvevfv sd vdfv", "9:59 am", true]
-        ]
+router.get('/', async ctx => {
+
+    const fetchAllUserMessages = () => {
+        return new Promise((resolve, reject) => {
+
+            const token = ctx.request.headers['x-access-token'];
+            const currentUserID = getUserId(token)
+
+            models.Message.findAll({
+                where: {
+                    [models.Sequelize.Op.or]:[
+                        {sender: currentUserID},
+                        {recipient: currentUserID}
+                    ]
+                },
+                order: [['createdAt', 'ASC']]
+            }).then((messages) => {
+                let output ={};
+                messages.map((messageData) => {
+                    const {message, recipient, sender, createdAt} = messageData.dataValues;
+
+                    const fellowID = currentUserID === recipient? sender: recipient;
+
+                    if(!output[fellowID])
+                        output[fellowID] = [];
+
+                    output[fellowID].push([message, createdAt, sender === currentUserID]);
+                });
+
+                ctx.status = 200;
+                resolve(output);
+            });
+
+        });
     };
+
+    ctx.body = await fetchAllUserMessages();
+
 });
 
-router.get('/contacts', ctx => {
-    ctx.body = {
-        shgvVG567HGYBHJ: ["Number one", "9:50 am"],
-        shgvVG56asdv7HGYBHJ: ["I am two", "9:53 am"],
-        shgvVG56asacsvdv7HGYBHJ: ["Number three", "9:57 am"]
+router.get('/contacts', async ctx => {
+
+    const fetchAllUsers = () => {
+        return new Promise((resolve, reject) => {
+
+            const token = ctx.request.headers['x-access-token'];
+
+            models.User.findAll({
+                attributes: ['id', 'username', 'createdAt'],
+                where: {
+                    id: {[models.Sequelize.Op.not]: getUserId(token)}
+                }
+            }).then((users) => {
+                let output ={};
+                users.map((user) =>{
+                    const {id, username, createdAt} = user.dataValues;
+                    output[id] = [username, createdAt];
+                });
+
+                ctx.status = 200;
+                resolve(output);
+            });
+
+        });
     };
+
+    ctx.body = await fetchAllUsers();
+
 });
 
 router.post('/:user/message', ctx => {
@@ -71,13 +129,51 @@ router.post('/users', async (ctx) => {
                     ctx.status = 200;
                     resolve(token);
                 }).catch(models.Sequelize.Error, () =>{
-
+                    ctx.status = 409;
+                    resolve({errMsg: "Username already in use"});
                 });
             });
         });
     };
 
-    ctx.body = await addUserToDB(ctx);
+    ctx.body = await addUserToDB();
+
+});
+
+router.post('/users/authenticate', async (ctx) => {
+
+    const findUSer = () => {
+        return new Promise((resolve, reject) => {
+
+            models.User.findOne({
+                attributes: ['id', 'password'],
+                where: { username: ctx.request.body.username }
+            }).then((user) => {
+                if(!user){
+                    ctx.status = 401;
+                    resolve({errMsg: "Incorrect username"});
+                }
+                bcrypt.compare(ctx.request.body.passwd, user.dataValues.password).then((err) =>{
+                    if(!err){
+                        ctx.status = 401;
+                        resolve({errMsg: "Incorrect password"});
+                        return;
+                    }
+
+                    const token = jwt.sign(
+                        {userId: user.dataValues.id},
+                        process.env.SECRET_KEY,
+                        {expiresIn: "1 day"}
+                    );
+                    ctx.status = 200;
+                    resolve(token);
+                });
+            });
+
+        });
+    };
+
+    ctx.body = await findUSer();
 
 });
 
