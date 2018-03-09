@@ -8,7 +8,7 @@ import http from 'http';
 import models from './models';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+let connectedSockets = [];
 const app = new Koa(), router = new Router();
 
 const server = http.createServer(app.callback()); // create a http server
@@ -35,7 +35,7 @@ router.get('/', async ctx => {
         return new Promise((resolve, reject) => {
 
             const token = ctx.request.headers['x-access-token'];
-            const currentUserID = getUserId(token)
+            const currentUserID = getUserId(token);
 
             models.Message.findAll({
                 where: {
@@ -99,13 +99,26 @@ router.get('/contacts', async ctx => {
 
 });
 
-router.post('/:user/message', ctx => {
-    ctx.body = models.Message.create({
-        recipient: 50,//ctx.params.user,
-        message: ctx.request.body.message
-    }).then((message) => {
-        ctx.body = message.dataValues;
-    });
+router.post('/:user/message', async ctx => {
+
+    const token = ctx.request.headers['x-access-token'];
+
+    const createNewMessage = () => {
+        return new Promise((resolve, reject) => {
+
+            ctx.body = models.Message.create({
+                sender: getUserId(token),
+                recipient: ctx.params.user,
+                message: ctx.request.body.message
+            }).then((message) => {
+                ctx.status = 200;
+                resolve(message.dataValues);
+            });
+        });
+    };
+
+    ctx.body = await createNewMessage()
+
 });
 
 router.post('/users', async (ctx) => {
@@ -119,12 +132,19 @@ router.post('/users', async (ctx) => {
                     username: ctx.request.body.username,
                     password: hash
                 }).then((newUser) => {
+                    const {id, username, createdAt} = newUser.dataValues;
                     /* Create web token */
                     token = jwt.sign(
-                        {userId: newUser.dataValues.id},
+                        {userId: id},
                         process.env.SECRET_KEY,
                         {expiresIn: "1 day"}
                     );
+
+                    broadcastSockData('newUSer', {
+                        id,
+                        username,
+                        createdAt
+                    });
 
                     ctx.status = 200;
                     resolve(token);
@@ -184,14 +204,20 @@ app
     .use(router.routes());
 
 
-
 socket.on('connection', (connectedSocket) =>{
-    connectedSocket.on('subscribeToTimer', (interval)=>{
-        console.log("subscribeToTimer ", interval);
-        connectedSocket.emit('interval_received', interval)
-    });
-    console.log("Connected id: ", connectedSocket.id)
+    connectedSockets.push(connectedSocket);
+    // connectedSocket.on('subscribeToTimer', (interval)=>{
+    //     console.log("subscribeToTimer ", interval);
+    //     connectedSocket.emit('interval_received', interval)
+    // });
+    // console.log("Connected id: ", connectedSocket.id)
 });
+
+const broadcastSockData = (event, data) =>{
+    connectedSockets.map((sock)=>{
+        sock.emit(event, data);
+    });
+};
 
 // Create database tables
 models.sequelize.sync().then(() =>{

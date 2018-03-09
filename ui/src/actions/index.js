@@ -52,10 +52,10 @@ export const createMessage = (message, recipientsID) =>{
         /* display loader */
         dispatch({type: actionTypes.START_LOADER});
 
-        fetchFromApi("post", `/${recipientsID}/message`, message).then(() => {
+        fetchFromApi("post", `/${recipientsID}/message`, message).then((data) => {
             dispatch({
                 type: actionTypes.CREATE_MESSAGE_SUCCESS,
-                message: message
+                data: data
             });
         }).catch((err) => {
             dispatch(displayErrorMessage(err));
@@ -84,24 +84,8 @@ export const authenticateUser = (endpoint, userdata) =>{
 
 };
 
-//
-// export const createContact = (endpoint, userData) =>{
-//     return function (dispatch) {
-//
-//         /* display loader */
-//         dispatch({type: actionTypes.START_LOADER});
-//
-//         fetchFromApi("post", endpoint, userData).then((outPut) => {
-//             /* Set token in localStorage */
-//             localStorage.setItem("token", outPut.token);
-//             localStorage.setItem("displayName", outPut.displayName);
-//
-//             dispatch({
-//                 type: actionTypes.AUTHENTICATE_USER_SUCCESS,
-//                 displayName: outPut.displayName
-//             });
-//         }).catch((err) => {
-//             dispatch(displayErrorMessage(err));
-//         });
-//     }
-// };
+export const addNewContact = (newUser) =>{
+    return function (dispatch) {
+        dispatch({type: actionTypes.NEW_USER_NOTIFY, newUser});
+    }
+};

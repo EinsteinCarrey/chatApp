@@ -7,7 +7,7 @@ import ChatHeader from "./chatHeader";
 import {bindActionCreators} from "redux";
 import {connect} from 'react-redux';
 import io from 'socket.io-client';
-import {fetchMessages, fetchContacts, createMessage, authenticateUser} from '../actions/';
+import {fetchMessages, fetchContacts, createMessage, authenticateUser, addNewContact} from '../actions/';
 import AuthenticationModal from './authenticationModal';
 import toastr from 'toastr';
 import '../../node_modules/toastr/build/toastr.min.css';
@@ -33,22 +33,16 @@ class App extends Component {
     };
 
     componentDidMount(){
+        const {fetchMessages, fetchContacts, addNewContact} = this.props;
         if(this.state.user) {
-            const {fetchMessages, fetchContacts} = this.props;
             fetchContacts();
             fetchMessages();
         }
-    }
 
-    componentWillMount(){
-
-
-        // const socket = io(socketUrl);
-        // socket.on('interval_received', (interval)=>{
-        //     console.log("interval_received", interval);
-        // });
-        //
-        // socket.emit('subscribeToTimer', 1000);
+        const socket = io(socketUrl);
+        socket.on('newUSer', (userdata)=>{
+            addNewContact(userdata);
+        });
 
     }
 
@@ -217,6 +211,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
    return bindActionCreators({
+       addNewContact,
        fetchMessages,
        fetchContacts,
        createMessage,
