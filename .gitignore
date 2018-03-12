@@ -64,3 +64,4 @@ typings/
 
 .idea/
 designs/ChatApp.bmpr
+api/dist/

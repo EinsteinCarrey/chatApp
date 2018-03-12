@@ -19,14 +19,13 @@ const getUserId = (token) =>{
     // verifies secret and checks exp
     jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
         if (err) {
-            output = {errMsg: "Authenticate token is invalid"};
-        } else {
-            // token is valid
-            output = decoded.userId;
+            output = false;
+            return;
         }
+        // token is valid
+        output = decoded.userId;
     });
     return output;
-
 };
 
 router.get('/', async ctx => {
@@ -36,6 +35,11 @@ router.get('/', async ctx => {
 
             const token = ctx.request.headers['x-access-token'];
             const currentUserID = getUserId(token);
+            if(currentUserID === false){
+                ctx.status = 401;
+                resolve({errMsg: "Authenticate token is invalid"});
+                return;
+            }
 
             models.Message.findAll({
                 where: {
@@ -75,11 +79,17 @@ router.get('/contacts', async ctx => {
         return new Promise((resolve, reject) => {
 
             const token = ctx.request.headers['x-access-token'];
+            const currentUserID = getUserId(token);
+            if(currentUserID === false) {
+                ctx.status = 401;
+                resolve({errMsg: "Authenticate token is invalid"});
+                return;
+            }
 
             models.User.findAll({
                 attributes: ['id', 'username', 'createdAt'],
                 where: {
-                    id: {[models.Sequelize.Op.not]: getUserId(token)}
+                    id: {[models.Sequelize.Op.not]: currentUserID}
                 }
             }).then((users) => {
                 let output ={};
@@ -106,8 +116,15 @@ router.post('/:user/message', async ctx => {
     const createNewMessage = () => {
         return new Promise((resolve, reject) => {
 
+            const currentUserID = getUserId(token);
+            if(currentUserID === false) {
+                ctx.status = 401;
+                resolve({errMsg: "Authenticate token is invalid"});
+                return;
+            }
+
             ctx.body = models.Message.create({
-                sender: getUserId(token),
+                sender: currentUserID,
                 recipient: ctx.params.user,
                 message: ctx.request.body.message
             }).then((message) => {

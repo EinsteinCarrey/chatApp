@@ -67,7 +67,7 @@ class AuthenticationModal extends React.Component {
                         <Typography
                             align="left"
                             color="primary"
-                            variant="Headline"
+                            variant="headline"
                         >
                             {
                                 this.state.action === "signup" ? <div>Create An Account</div> :

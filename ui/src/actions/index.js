@@ -4,7 +4,10 @@ import toastr from 'toastr';
 
 const displayErrorMessage = (err) =>{
     toastr.error(err);
-    return {type: actionTypes.DISPLAY_ERROR_MSG}
+    let output = null;
+    String(err).includes("session has expired") ? output = {type: actionTypes.RE_AUTHENTICATE} :
+        output = {type: actionTypes.DISPLAY_ERROR_MSG};
+    return output;
 };
 
 export const fetchMessages = () =>{
@@ -74,8 +77,7 @@ export const authenticateUser = (endpoint, userdata) =>{
         fetchFromApi("post", endpoint, userdata).then((token) => {
             localStorage.setItem('token', token);
             dispatch({
-                type: actionTypes.CREATE_USER_SUCCESS,
-                token: token
+                type: actionTypes.CREATE_USER_SUCCESS
             });
         }).catch((err) => {
             dispatch(displayErrorMessage(err));

@@ -31,6 +31,11 @@ const runRequest = (method, endpoint, data) => {
     }
 };
 
+const clearExpiredToken = ()=> {
+    localStorage.clear();
+    return 'Your session has expired. Please login to continue';
+};
+
 /* Query the api and handle the output */
 const fetchFromApi = (method, endpoint="", data=null) => {
     return new Promise((resolve,reject)=>{
@@ -42,18 +47,19 @@ const fetchFromApi = (method, endpoint="", data=null) => {
                 resolve(response.data);
 
         }).catch(error => {
-            // if(!endpoint.includes('login')) {
-            //     reAuthenticateIfStatusCodeIs401(error);
-            // }
-            //
+
+            // Re-Authenticate if status code is 401
+            String(error).includes('401')?
+                reject(clearExpiredToken()):
 
             /* Return relevant error message if Network Error occurred */
             (String(error).includes('Network Error')) ?
                 reject("Could not connect to server. Please check your network connection"):
 
-                /* If error contains a custom error message, display the error message,
-                 otherwise display the default error */
-                (error.response && error.response.data.errMsg) ? reject(error.response.data.errMsg): reject(error);
+            // If error contains a custom error message, display the error message
+            // otherwise display the default error
+            (error.response && error.response.data.errMsg) ? reject(error.response.data.errMsg):
+                reject(error);
 
         });
     });

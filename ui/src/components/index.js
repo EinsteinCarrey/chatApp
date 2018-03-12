@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {MuiThemeProvider, createMuiTheme, TextField, Button} from "material-ui";
+import {MuiThemeProvider, createMuiTheme, TextField, Button, Typography} from "material-ui";
 import '../assets/index.css';
 import User  from './user';
 import Chat  from './chats';
@@ -11,6 +11,7 @@ import {fetchMessages, fetchContacts, createMessage, authenticateUser, addNewCon
 import AuthenticationModal from './authenticationModal';
 import toastr from 'toastr';
 import '../../node_modules/toastr/build/toastr.min.css';
+import MessageInput from "./newMessageInput";
 
 
 const socketUrl = 'http://127.0.0.1:4000';
@@ -33,15 +34,15 @@ class App extends Component {
     };
 
     componentDidMount(){
-        const {fetchMessages, fetchContacts, addNewContact} = this.props;
+        const {fetchmessages, fetchcontacts, addnewcontact} = this.props;
         if(this.state.user) {
-            fetchContacts();
-            fetchMessages();
+            fetchcontacts();
+            fetchmessages();
         }
 
         const socket = io(socketUrl);
         socket.on('newUSer', (userdata)=>{
-            addNewContact(userdata);
+            addnewcontact(userdata);
         });
 
     }
@@ -63,9 +64,9 @@ class App extends Component {
         if( this.state.user !== nextProps.user) {
             this.setState({user: nextProps.user});
 
-            const {fetchMessages, fetchContacts} = this.props;
-            fetchContacts();
-            fetchMessages();
+            const {fetchmessages, fetchcontacts} = this.props;
+            fetchcontacts();
+            fetchmessages();
         }
 
     }
@@ -86,7 +87,7 @@ class App extends Component {
         };
         let endPoint = "";
         signupAction === "login" ? endPoint = "/users/authenticate" : endPoint="/users";
-        this.props.authenticateUser(endPoint, data);
+        this.props.authenticateuser(endPoint, data);
     };
 
     hideAuthModal = ()=>{
@@ -106,7 +107,7 @@ class App extends Component {
 
 
     sendMessage = () =>{
-        this.props.createMessage(
+        this.props.createmessage(
             { message: this.state.newMessage },
             this.state.currentChat
         );
@@ -159,30 +160,24 @@ class App extends Component {
                             )}
 
                         </div>
-                        <div className="message-input">
-                            <TextField
-                                id="newMessage"
-                                multiline
-                                rowsMax="4"
-                                fullWidth
-                                placeholder={
-                                    contacts[currentChat] ? "Message " + contacts[currentChat][0] : ""
-                                }
-                                onChange={(e) => {
-                                    updateNewMessage(e)
-                                }}
-                                margin="normal"
-                            />
-                        </div>
-                        <div className="send-message">
-                            <Button
-                                variant="raised"
-                                color="primary"
-                                onClick={sendMessage}>
-                                Send
-                            </Button>
-                        </div>
+
+                        {
+                            Object.keys(contacts).length > 0 ?
+                                <MessageInput
+                                    currentChat={contacts[currentChat][0]}
+                                    updateNewMessage={updateNewMessage}
+                                    sendMessage={sendMessage}
+                                /> :
+
+                                <Typography variant="headline" gutterBottom align="center">
+                                    You don't have any contacts yet
+                                </Typography>
+                        }
+
                         <div className="chats-sidebar">
+                            <Typography variant="headline" gutterBottom align="center">
+                                Contacts
+                            </Typography>
                             <ul>
                                 {Object.keys(contacts).map((id) => (
                                     <User
@@ -211,11 +206,11 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
    return bindActionCreators({
-       addNewContact,
-       fetchMessages,
-       fetchContacts,
-       createMessage,
-       authenticateUser
+       addnewcontact: addNewContact,
+       fetchmessages: fetchMessages,
+       fetchcontacts: fetchContacts,
+       createmessage: createMessage,
+       authenticateuser: authenticateUser
    }, dispatch);
 };
 
