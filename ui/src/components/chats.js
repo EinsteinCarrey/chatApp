@@ -6,7 +6,7 @@ import '../assets/index.css';
 class Message extends Component {
     render() {
 
-        const {message} = this.props;
+        const {message, getTimeOnly} = this.props;
 
         return (
             <div className="message-div">
@@ -18,7 +18,7 @@ class Message extends Component {
                     </Typography>
                     <Typography variant="caption" gutterBottom align="right">
                         <div>
-                            {message[1]}
+                            {getTimeOnly(message[1])}
                         </div>
                     </Typography>
                 </div>

@@ -15,8 +15,7 @@ class User extends Component {
 
         const {id, contact, changeRecipient} = this.props;
 
-        const userName = contact[0],
-            lastActive = contact[1];
+        const userName = contact[0];
 
         return (
             <div className="user-details"
@@ -29,7 +28,6 @@ class User extends Component {
                         </Avatar>
                     }
                     title={userName}
-                    subheader={lastActive}
                 />
             </div>
         );

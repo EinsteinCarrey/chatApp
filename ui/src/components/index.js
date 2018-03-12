@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {MuiThemeProvider, createMuiTheme, TextField, Button, Typography} from "material-ui";
+import {MuiThemeProvider, createMuiTheme, Button, Typography, CardHeader} from "material-ui";
 import '../assets/index.css';
 import User  from './user';
 import Chat  from './chats';
@@ -17,6 +17,7 @@ import MessageInput from "./newMessageInput";
 const socketUrl = 'http://127.0.0.1:4000';
 const theme = createMuiTheme();
 const socket = io(socketUrl);
+let currentUsersName = localStorage.getItem('username') || "";
 
 class App extends Component {
 
@@ -86,6 +87,8 @@ class App extends Component {
             const {fetchmessages, fetchcontacts} = this.props;
             fetchcontacts();
             fetchmessages();
+
+            currentUsersName = localStorage.getItem('username') || "";
         }
 
     }
@@ -132,6 +135,15 @@ class App extends Component {
         );
     };
 
+    getTimeOnly = (timestamp) =>{
+        return timestamp.substr(timestamp.indexOf('T')+1, 5);
+    };
+
+    logout = () =>{
+        localStorage.clear();
+        this.setState({ user: "" })
+    };
+
     render() {
 
         const {
@@ -149,7 +161,9 @@ class App extends Component {
             sendMessage,
             updateInputState,
             hideAuthModal,
-            authenticateUser
+            authenticateUser,
+            getTimeOnly,
+            logout
         } = this;
 
         return (
@@ -174,7 +188,11 @@ class App extends Component {
                             }
 
                             {messages[currentChat] && messages[currentChat].map((message, index) => (
-                                    <Chat key={index} message={message} ownMessage={index % 2}/>
+                                    <Chat
+                                        key={index}
+                                        message={message}
+                                        getTimeOnly={getTimeOnly}
+                                    />
                                 )
                             )}
 
@@ -194,6 +212,16 @@ class App extends Component {
                         }
 
                         <div className="chats-sidebar">
+                            <div className="currentUser">
+                                <CardHeader
+                                    title={currentUsersName}
+                                    action={
+                                        <Button variant="raised" onClick={logout} align="right">
+                                            LogOut
+                                        </Button>
+                                    }
+                                />
+                            </div>
                             <Typography variant="headline" gutterBottom align="center">
                                 Contacts
                             </Typography>

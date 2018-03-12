@@ -75,6 +75,7 @@ export const authenticateUser = (endpoint, userdata) =>{
         dispatch({type: actionTypes.START_LOADER});
 
         fetchFromApi("post", endpoint, userdata).then((token) => {
+            localStorage.setItem('username', userdata.username);
             localStorage.setItem('token', token);
             dispatch({
                 type: actionTypes.CREATE_USER_SUCCESS
