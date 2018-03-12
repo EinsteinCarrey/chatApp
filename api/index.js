@@ -8,7 +8,7 @@ import http from 'http';
 import models from './models';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-let connectedSockets = [];
+let connectedSockets = {};
 const app = new Koa(), router = new Router();
 
 const server = http.createServer(app.callback()); // create a http server
@@ -123,11 +123,20 @@ router.post('/:user/message', async ctx => {
                 return;
             }
 
-            ctx.body = models.Message.create({
+            models.Message.create({
                 sender: currentUserID,
                 recipient: ctx.params.user,
                 message: ctx.request.body.message
             }).then((message) => {
+
+                // Send message to recipient via socket
+                Object.keys(connectedSockets).map((sock_user)=>{
+
+                    if(sock_user === ctx.params.user) {
+                        connectedSockets[sock_user].emit('newMessage', message.dataValues);
+                    }
+                });
+
                 ctx.status = 200;
                 resolve(message.dataValues);
             });
@@ -157,7 +166,7 @@ router.post('/users', async (ctx) => {
                         {expiresIn: "1 day"}
                     );
 
-                    broadcastSockData('newUSer', {
+                    broadcastSockData('newUser', {
                         id,
                         username,
                         createdAt
@@ -222,17 +231,16 @@ app
 
 
 socket.on('connection', (connectedSocket) =>{
-    connectedSockets.push(connectedSocket);
-    // connectedSocket.on('subscribeToTimer', (interval)=>{
-    //     console.log("subscribeToTimer ", interval);
-    //     connectedSocket.emit('interval_received', interval)
-    // });
+
+    connectedSocket.on('register_user', (user)=>{
+        connectedSockets[getUserId(user)] = connectedSocket
+    });
     // console.log("Connected id: ", connectedSocket.id)
 });
 
 const broadcastSockData = (event, data) =>{
-    connectedSockets.map((sock)=>{
-        sock.emit(event, data);
+    Object.keys(connectedSockets).map((sock_user)=>{
+        connectedSockets[sock_user].emit(event, data);
     });
 };
 

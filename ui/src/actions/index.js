@@ -86,6 +86,12 @@ export const authenticateUser = (endpoint, userdata) =>{
 
 };
 
+export const addNewMessage = (message) =>{
+    return function (dispatch) {
+        dispatch({type: actionTypes.NEW_MESSAGE_NOTIFY, message});
+    }
+};
+
 export const addNewContact = (newUser) =>{
     return function (dispatch) {
         dispatch({type: actionTypes.NEW_USER_NOTIFY, newUser});

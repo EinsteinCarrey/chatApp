@@ -7,7 +7,7 @@ import ChatHeader from "./chatHeader";
 import {bindActionCreators} from "redux";
 import {connect} from 'react-redux';
 import io from 'socket.io-client';
-import {fetchMessages, fetchContacts, createMessage, authenticateUser, addNewContact} from '../actions/';
+import {fetchMessages, fetchContacts, createMessage, authenticateUser, addNewContact, addNewMessage} from '../actions/';
 import AuthenticationModal from './authenticationModal';
 import toastr from 'toastr';
 import '../../node_modules/toastr/build/toastr.min.css';
@@ -16,6 +16,7 @@ import MessageInput from "./newMessageInput";
 
 const socketUrl = 'http://127.0.0.1:4000';
 const theme = createMuiTheme();
+const socket = io(socketUrl);
 
 class App extends Component {
 
@@ -34,16 +35,30 @@ class App extends Component {
     };
 
     componentDidMount(){
-        const {fetchmessages, fetchcontacts, addnewcontact} = this.props;
-        if(this.state.user) {
+        const {fetchmessages, fetchcontacts, addnewcontact, addnewmessage} = this.props;
+        const {user} = this.state;
+        if(user) {
             fetchcontacts();
             fetchmessages();
         }
 
-        const socket = io(socketUrl);
-        socket.on('newUSer', (userdata)=>{
-            addnewcontact(userdata);
+
+        socket.on('connect', ()=>{
+
+            // Register user for this socket
+            socket.emit('register_user', user);
+
+            // Receive new contacts created
+            socket.on('newUser', (userdata)=>{
+                addnewcontact(userdata);
+            });
+
+            // Receive new contacts created
+            socket.on('newMessage', (messageData)=>{
+                addnewmessage(messageData);
+            });
         });
+
 
     }
 
@@ -64,6 +79,10 @@ class App extends Component {
         if( this.state.user !== nextProps.user) {
             this.setState({user: nextProps.user});
 
+            // Register user for this socket
+            socket.emit('register_user', nextProps.user);
+
+            //  Get messages and contacts for this user
             const {fetchmessages, fetchcontacts} = this.props;
             fetchcontacts();
             fetchmessages();
@@ -206,6 +225,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
    return bindActionCreators({
+       addnewmessage: addNewMessage,
        addnewcontact: addNewContact,
        fetchmessages: fetchMessages,
        fetchcontacts: fetchContacts,
