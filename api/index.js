@@ -131,7 +131,6 @@ router.post('/:user/message', async ctx => {
 
                 // Send message to recipient via socket
                 Object.keys(connectedSockets).map((sock_user)=>{
-
                     if(sock_user === ctx.params.user) {
                         connectedSockets[sock_user].emit('newMessage', message.dataValues);
                     }
